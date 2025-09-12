@@ -39,15 +39,14 @@ const (
 )
 
 var (
+	// XXX Amboss: The code assumes that all assets are USD stablecoins
 	supportedAssetIDs = []string{
-		"c5dc35d9ffa03abcbd22d2d2801d10813970875029843039bf4f99d543d15fef",
-		"c28399c74ffbbfa0166428cb91bf7b196e827d5b4bfec6117433353aa2129d5c",
-		"1a791e3a088e0e3c85c7c4652dd868ce2ea3f19cdc59e9adffafa6996028103e",
+		"6dda85b41ff3872725fdbe24b28158f0aa81052fb4b17e5983f39ba45604a3f4", // Shitcoins
+		"c26aedbbb9d925dbc8c7500eba765ab403960972c80036824c430c35e3e7a79b", // USD-XXX
+		"e329e19ed02b8d05bd97fcbf5aa7273cbd87fac7ac4a16d7ade7786ae63e429a", // USDT-L
 	}
 
-	supportedGroupKeys = []string{
-		"02875ce409b587a6656357639d099ad9eb08396d0dfea8930a45e742c81d6fc782",
-	}
+	supportedGroupKeys = []string{}
 )
 
 // setupLogger sets up the logger to write logs to a file.
@@ -249,8 +248,8 @@ func fetchBTCUSDPrice() (float64, error) {
 	return avg, nil
 }
 
-// getPurchaseRate returns the buy (purchase) rate for the asset. The unit of
-// the rate is the number of TAP asset units per BTC.
+// getAssetRates returns the asset rates for a given transaction type and
+// subject asset max amount.
 //
 // Suppose our TAP asset is a USD stablecoin. To support liquidity and precision
 // in rate conversion, we mint 1,000,000 TAP asset units per 1.00 USD. Wallet
@@ -304,22 +303,14 @@ func fetchBTCUSDPrice() (float64, error) {
 // So the rate can be represented as:
 //
 // rfqmath.NewBigIntFixedPoint(1, 5)
-func getPurchaseRate() rfqmath.BigIntFixedPoint {
-	return rfqmath.NewBigIntFixedPoint(42_000_160_000, 0)
-}
-
-// getSaleRate returns the sell/sale rate for the asset. The units of the
-// rate is the number of TAP asset units per BTC.
 //
-// NOTE: see getPurchaseRate for more information.
-func getSaleRate() rfqmath.BigIntFixedPoint {
-	return rfqmath.NewBigIntFixedPoint(39_000_220_000, 0)
-}
+// ---
+func getAssetRates(
+	transactionType oraclerpc.TransactionType,
+	subjectAssetMaxAmount uint64,
+) (oraclerpc.AssetRates, error) {
 
-// getAssetRates returns the asset rates for a given transaction type and
-// subject asset max amount.
-func getAssetRates(transactionType oraclerpc.TransactionType,
-	subjectAssetMaxAmount uint64) (oraclerpc.AssetRates, error) {
+	// XXX Amboss: Only BTC/USD exchange rates are being returned here.
 
 	// Fetch the real-time BTC to USD price.
 	btcPriceUSD, err := fetchBTCUSDPrice()
@@ -348,6 +339,8 @@ func getAssetRates(transactionType oraclerpc.TransactionType,
 		subjectAssetRate = rfqmath.FixedPointFromUint64[rfqmath.BigInt](scaledPrice, 6)
 	} else {
 		logrus.Info("Calculating rate for SALE transaction (applying discount)")
+		// XXX Amboss: We would want to insert a spread here...
+		//
 		// Optionally adjust the rate for SALE (e.g., a 5% discount).
 		// Example, 95/100 would provide the 5% discount
 		// Here we have removed the discount for testing by changing 95/100 to 1.
@@ -410,7 +403,8 @@ func getAssetRates(transactionType oraclerpc.TransactionType,
 // - `PaymentAsset` to BTC.
 // - `TransactionType` to PURCHASE.
 // - `AssetRateHint` to the value given in Alice's quote request.
-func (p *RpcPriceOracleServer) QueryAssetRates(_ context.Context,
+func (p *RpcPriceOracleServer) QueryAssetRates(
+	_ context.Context,
 	req *oraclerpc.QueryAssetRatesRequest) (
 	*oraclerpc.QueryAssetRatesResponse, error) {
 
@@ -455,6 +449,9 @@ func (p *RpcPriceOracleServer) QueryAssetRates(_ context.Context,
 		err        error
 	)
 
+	// XXX Amboss: We wouldn't want to do this. Might want to check whether
+	// our own proposed exchange rate is close enough to the hint, but what
+	// to do if it isn't?
 	if req.AssetRatesHint != nil {
 		// If the asset rates hint is provided, return it as the asset
 		// rate. In doing so, we effectively accept the asset rates
