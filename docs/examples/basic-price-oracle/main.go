@@ -134,10 +134,11 @@ func isSupportedSubjectAsset(spec *oraclerpc.AssetSpecifier) bool {
 		return true
 	}
 
-	logrus.Warnf("Subject asset is not supported (assetIDStr=%s, groupKeyStr=%s)",
-		spec.GetAssetIdStr(), spec.GetGroupKeyStr())
+	// logrus.Warnf("Subject asset is not supported (assetIDStr=%s, groupKeyStr=%s)",
+	// 	spec.GetAssetIdStr(), spec.GetGroupKeyStr())
+	// return false
 
-	return false
+	return true
 }
 
 // fetchBTCUSDPrice fetches the current BTC to USD exchange rate from multiple public APIs
