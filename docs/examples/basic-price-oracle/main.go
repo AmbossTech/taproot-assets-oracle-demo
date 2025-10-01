@@ -20,7 +20,6 @@ import (
 	"io"
 	"log"
 	"math/big"
-	mrand "math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -246,10 +245,8 @@ func fetchBTCUSDPrice() (float64, error) {
 		sum += p
 	}
 	avg := sum / float64(len(prices))
-	randomAdjustment := (mrand.Float64()*0.1 - 0.05) * avg // Random value within ±5%
-	adjustedPrice := avg + randomAdjustment
-	logrus.Infof("Averaged BTC price with 5% randomness from %d sources: %f USD", len(prices), adjustedPrice)
-	return adjustedPrice, nil
+	logrus.Infof("Averaged BTC price from %d sources: %f USD", len(prices), avg)
+	return avg, nil
 }
 
 // getAssetRates returns the asset rates for a given transaction type and
